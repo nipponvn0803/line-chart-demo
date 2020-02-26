@@ -20,7 +20,6 @@ import {
 import { makeStyles } from "@material-ui/core/styles";
 import styled from "styled-components";
 import CustomizeButton from "./CustomizeButton";
-import { chartData } from "./chartData";
 
 const QuickControl = styled.div`
   width: 340px;
@@ -39,8 +38,6 @@ const InviButton = styled.button`
     outline: 0;
   }
 `;
-
-const mobile = window.innerWidth < 420;
 
 const useStyles = makeStyles(theme => ({
   formControl: {
@@ -106,44 +103,16 @@ let colorArray = [
   "rgb(177,193,192,0.3)"
 ];
 
-function StatisticsLineChart() {
+function StatisticsLineChart(props) {
+  const { chartData, labels } = props;
   const classes = useStyles();
   const chart = React.useRef(null);
-  const [, updateState] = React.useState();
-  const forceUpdate = React.useCallback(() => updateState({}), []);
   const [selectedTeams, setSelectedTeams] = React.useState([]);
   const [initialDataSet, setInitialData] = React.useState([]);
   const [filterTeamsArray, setFilterTeams] = React.useState([]);
   const [teamsFilterValue, setTeamsFilter] = React.useState("");
   const [anchorEl, setAnchorEl] = React.useState(null);
   const teamListOpen = Boolean(anchorEl);
-
-  const labels = [
-    "12:00",
-    "13:00",
-    "14:00",
-    "15:00",
-    "16:00",
-    "17:00",
-    "18:00",
-    "19:00",
-    "20:00",
-    "21:00",
-    "22:00",
-    "23:00",
-    "00:00",
-    "01:00",
-    "02:00",
-    "03:00",
-    "04:00",
-    "05:00",
-    "06:00",
-    "07:00",
-    "08:00",
-    "09:00",
-    "10:00",
-    "11:00"
-  ];
 
   const datasets = chartData.map(data => ({
     // background and border color will be repeated when all colors have been used
@@ -171,45 +140,27 @@ function StatisticsLineChart() {
   const chartOptions = {
     legend: {
       display: false
-    },
-    scales: {
-      yAxes: [
-        {
-          ticks: {
-            color: "#000",
-            beginAtZero: true,
-            callback: function(value) {
-              if (value % 1 === 0) {
-                return value;
-              }
-            }
-          }
-        }
-      ],
-      xAxes: [
-        {
-          ticks: {
-            color: "#000"
-          }
-        }
-      ]
     }
   };
 
   React.useEffect(() => {
     // wait for the chart to mount
     setTimeout(() => {
-      forceUpdate();
+      if (
+        chart.current.chartInstance.data.datasets.length !== 0 &&
+        chart.current.chartInstance.data.datasets !== undefined
+      ) {
+        chart.current.chartInstance.data.datasets.map(
+          // put all teams as selected
+          team => setSelectedTeams(oldArray => [...oldArray, team.label]),
+          // save the initial data set with all teams
+          setInitialData(chart.current.chartInstance.data.datasets),
 
-      chart.current.chartInstance.data.datasets.map(
-        // put all teams as selected
-        team => setSelectedTeams(oldArray => [...oldArray, team.label]),
-        // save the initial data set with all teams
-        setInitialData(chart.current.chartInstance.data.datasets),
-        // prepare array of teams to used with filter
-        setFilterTeams(chart.current.chartInstance.data.datasets)
-      );
-    }, 100);
+          // prepare array of teams to used with filter
+          setFilterTeams(chart.current.chartInstance.data.datasets)
+        );
+      }
+    }, 200);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -225,7 +176,7 @@ function StatisticsLineChart() {
       } else {
         return;
       }
-    }, 100);
+    }, 300);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeams]);
 
@@ -245,10 +196,6 @@ function StatisticsLineChart() {
     }
   };
 
-  const checkIfTeamIsSelected = team => {
-    return selectedTeams.indexOf(team.label) > -1;
-  };
-
   const removeAllTeams = () => {
     setSelectedTeams([]);
   };
@@ -259,6 +206,10 @@ function StatisticsLineChart() {
       teamLabel.push(initialDataSet[i].label);
     }
     setSelectedTeams(teamLabel);
+  };
+
+  const checkIfTeamIsSelected = team => {
+    return selectedTeams.indexOf(team.label) > -1;
   };
 
   const filterTeam = () => {
@@ -331,24 +282,22 @@ function StatisticsLineChart() {
                 <Paper>
                   {filterTeamsArray !== undefined &&
                     filterTeamsArray.length !== 0 &&
-                    filterTeamsArray.map(team => {
-                      return (
-                        <MenuItem
-                          onClick={() => toggleDisplayTeam(team.label)}
-                          key={team.label}
-                          value={team.label}
-                        >
-                          <Checkbox
-                            style={{
-                              color: borderArray[initialDataSet.indexOf(team)]
-                            }}
-                            checked={selectedTeams.indexOf(team.label) > -1}
-                            onChange={() => toggleDisplayTeam(team.label)}
-                          />
-                          <ListItemText primary={team.label} />
-                        </MenuItem>
-                      );
-                    })}
+                    filterTeamsArray.map(team => (
+                      <MenuItem
+                        onClick={() => toggleDisplayTeam(team.label)}
+                        key={team.label}
+                        value={team.label}
+                      >
+                        <Checkbox
+                          style={{
+                            color: borderArray[initialDataSet.indexOf(team)]
+                          }}
+                          checked={selectedTeams.indexOf(team.label) > -1}
+                          onChange={() => toggleDisplayTeam(team.label)}
+                        />
+                        <ListItemText primary={team.label} />
+                      </MenuItem>
+                    ))}
                 </Paper>
               </ClickAwayListener>
             </Popper>
@@ -367,8 +316,8 @@ function StatisticsLineChart() {
       <Line
         data={data}
         options={chartOptions}
-        width={mobile ? 200 : 800}
-        height={mobile ? 250 : 400}
+        width={800}
+        height={400}
         ref={chart}
         className={classes.chart}
       />
